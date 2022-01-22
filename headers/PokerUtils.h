@@ -1,10 +1,19 @@
 #pragma once
-#include <vector>
 #include "Card.h"
+
+struct OffSets
+{
+    OffSets(int xOffset, int yOffset);
+
+    int x;
+    int y;
+};
 class PokerUtils
 {
 private:
+    static OffSets getImageOffset(cv::Mat img);
+    static const uint nbCardValues = 14;
 public:
-    std::vector<Card> GetCardsFromImg(cv::Mat cardsImg);
+    static std::vector<Card> GetCardsFromImg(cv::Mat& cardsImg);
 
 };
