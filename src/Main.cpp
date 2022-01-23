@@ -18,6 +18,7 @@ int main()
     cv::imshow("cards",cardsImg);
     std::vector<Card> cards = PokerUtils::GetCardsFromImg(cardsImg);
 
+
     cv::imshow("card", cards[51].rawImg);
     cv::imshow("anothercard", cards[39].rawImg);
 
