@@ -1,5 +1,6 @@
 #include "../headers/PokerUtils.h"
 #include <iostream>
+#include <filesystem>
 
 ///
 /// \param cardsImg image of all the cards
@@ -41,6 +42,49 @@ std::vector<Card> PokerUtils::GetCardsFromImg(cv::Mat& cardsImg) {
 OffSets PokerUtils::getImageOffset(cv::Mat img) {
 
     return {img.cols / 4 , img.rows / 13};
+}
+
+std::vector<cv::Mat> PokerUtils::GetAllImagesInPath(const std::string& path) {
+    std::vector<cv::Mat> images;
+    int i = 0;
+    std::cout << "getting images at path: "<< path << std::endl;
+    for (const auto& entry : std::filesystem::directory_iterator(path))
+    {
+        std::string ext = entry.path().extension().string();
+        if (ext != ".png" && ext != ".jpeg" && ext != ".BMP" && ext != ".TGA" && ext != ".jpg")
+        {
+            std::cout << entry.path().string().c_str() << " is not a compatible image" << std::endl;;
+            continue;
+        }
+        cv::Mat im;
+        im = cv::imread(entry.path().string());
+        images.push_back(im);
+        i++;
+    }
+    return images;
+}
+
+/*std::vector<cv::Mat> PokerUtils::GetCardsDescriptors(std::vector<Card> &cards) {
+
+    std::vector<cv::Mat> descriptors;
+
+    //get descriptors of each card
+    for(auto card : cards)
+    {
+        orbCards->detect(card.rawImg, card.objectKeyPoints);
+        orbCards->compute(card.rawImg, card.objectKeyPoints, card.descriptor);
+        descriptors.push_back(card.descriptor);
+    }
+    return descriptors;
+}*/
+
+void PokerUtils::GetCardsInTable(std::vector<Card> &cards, std::vector<cv::Mat> pokerTables) {
+
+    /*for(auto pokerTable : pokerTables)
+    {
+        orbPokerTables->detect(pokerTable, )
+    }*/
+
 }
 
 OffSets::OffSets(int xOffset, int yOffset) {

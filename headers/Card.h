@@ -1,5 +1,7 @@
 #pragma once
+#include "Image.h"
 #include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
 
 enum class CardType : unsigned short {
     Clubs = 0, Spades = 1, Diamonds = 2, Hearts = 3
@@ -20,13 +22,12 @@ enum class CardValue {
     Three = 3,
     Two = 2
 };
-class Card {
+
+class Card : public Image{
 private:
-    cv::Mat cardImg;
+    //cv::Mat cardImg;
     CardType cardType;
     CardValue cardValue;
 public:
-    cv::Mat rawImg;
-    explicit Card(const cv::Mat& img);
     Card(const cv::Mat& img, uint cardType, uint cardValue);
 };

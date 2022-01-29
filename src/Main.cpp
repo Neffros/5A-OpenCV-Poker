@@ -6,21 +6,32 @@
 
 #include "../headers/PokerUtils.h"
 
+
 int main()
 {
-    std::cout << "PROJECT1" << std::endl;
     std::string resourcePath = "../resources/";
+    std::string pokerTablesFolder = "pokerTables";
     std::string cardsImgName = "cards.jpg";
 
-    std::cout << resourcePath + cardsImgName << std::endl;
+    //get poker tables
+    std::vector<cv::Mat> pokerTables = PokerUtils::GetAllImagesInPath(resourcePath + pokerTablesFolder);
+    std::vector<Image> pokerTable;
+    //get cardsImg
     cv::Mat cardsImg = cv::imread(resourcePath + cardsImgName);
 
-    cv::imshow("cards",cardsImg);
+    //get vector of all cards
     std::vector<Card> cards = PokerUtils::GetCardsFromImg(cardsImg);
-
 
     cv::imshow("card", cards[51].rawImg);
     cv::imshow("anothercard", cards[39].rawImg);
+
+
+    /*std::vector<cv::Mat> descriptors = PokerUtils::GetCardsDescriptors(cards);
+    cv::BFMatcher bfMatcher;
+    bfMatcher.add(descriptors);
+    bfMatcher.train();*/
+
+
 
     cv::waitKey();
 
