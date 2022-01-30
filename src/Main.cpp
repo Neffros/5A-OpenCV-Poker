@@ -4,49 +4,39 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "../headers/PokerUtils.h"
+#include "../include/PokerTable.h"
+#include "../include/PokerAnalyzer.h"
 
 #include <filesystem>
+#include <fmt/format.h>
 
 int main()
 {
     std::filesystem::path resourcePath = "resources";
 	std::filesystem::path pokerTablesFolder = "pokerTables";
 	std::filesystem::path cardsImgName = "cards.jpg";
-
-    //get poker tables
-    std::vector<cv::Mat> pokerTablesMat = PokerUtils::GetAllImagesInPath(resourcePath / pokerTablesFolder);
-    std::vector<Image> pokerTables;
-
-    for(const auto& mat : pokerTablesMat)
-    {
-        Image table(mat);
-        pokerTables.push_back(table);
-    }
-
-    //get cardsImg
-    cv::Mat cardsImg = cv::imread((resourcePath / cardsImgName).generic_string());
-
-    //get vector of all cards
-    std::vector<Card> cards = PokerUtils::GetCardsFromImg(cardsImg);
-
-    cv::imshow("card", cards[51].rawImg);
-    cv::imshow("anothercard", cards[39].rawImg);
-
-    std::vector<cv::Mat> cardDescriptors = PokerUtils::GetCardsDescriptors(cards);
-    cv::BFMatcher bfMatcher;
-    bfMatcher.add(cardDescriptors);
-    bfMatcher.train();
-
-    std::vector<std::vector<cv::DMatch>> filteredMatches(cards.size());
-
-    //cv::imshow("poker table", pokerTables[0].rawImg);
-
-    //for(auto table : pokerTables)
-    //{
-        filteredMatches = PokerUtils::GetCardMatchesInTable(pokerTables[0], bfMatcher, cards);
-    //}
-    //PokerUtils::drawTable(pokerTables[0], filteredMatches);
+	
+	PokerAnalyzer pokerAnalyzer(resourcePath / cardsImgName);
+	
+	std::vector<PokerTable> pokerTables;
+	for (const auto& entry : std::filesystem::directory_iterator(resourcePath / pokerTablesFolder))
+	{
+		std::filesystem::path path = entry.path();
+		
+		std::string ext = path.extension().generic_string();
+		if (ext != ".png" && ext != ".jpeg" && ext != ".BMP" && ext != ".TGA" && ext != ".jpg")
+		{
+			std::cout << fmt::format("{} is not a compatible image", path.generic_string().c_str()) << std::endl;
+			continue;
+		}
+		
+		pokerTables.emplace_back(pokerAnalyzer.loadPokerTable(cv::imread(path.generic_string())));
+	}
+	
+    cv::imshow("card", pokerAnalyzer.getCards()[51].getPixelData());
+    cv::imshow("anothercard", pokerAnalyzer.getCards()[39].getPixelData());
+	
+	pokerAnalyzer.analyze(pokerTables[0]);
 
     cv::waitKey();
 

@@ -1,10 +1,9 @@
 .idea
 .vs
 
-bin
 vcpkg
 
+bin
 cmake-build-debug
 cmake-build-release
-
 out
