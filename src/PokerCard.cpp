@@ -1,17 +1,17 @@
 #include "../include/PokerCard.h"
 
-PokerCard::PokerCard(cv::Mat&& pixelData, cv::FeatureDetector& featureDetector, CardType cardType, CardValue cardValue):
+PokerCard::PokerCard(cv::Mat&& pixelData, cv::FeatureDetector& featureDetector, Type cardType, Value cardValue):
 Image(std::forward<cv::Mat>(pixelData), featureDetector), _cardType(cardType), _cardValue(cardValue)
 {
 
 }
 
-CardType PokerCard::getType() const
+PokerCard::Type PokerCard::getType() const
 {
 	return _cardType;
 }
 
-CardValue PokerCard::getValue() const
+PokerCard::Value PokerCard::getValue() const
 {
 	return _cardValue;
 }

@@ -47,7 +47,7 @@ void PokerAnalyzer::loadPokerCards(const std::filesystem::path& cardImagePath)
 					offset.y - RECT_Y_OFFSET
 			));
 			
-			_cards.emplace_back(std::move(cardImg), *_cardFeatureDetector, static_cast<CardType>(cardTypeId), static_cast<CardValue>(cardValueId));
+			_cards.emplace_back(std::move(cardImg), *_cardFeatureDetector, static_cast<PokerCard::Type>(cardTypeId), static_cast<PokerCard::Value>(cardValueId));
 			
 			cardValueId--;
 		}
