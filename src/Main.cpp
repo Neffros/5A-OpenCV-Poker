@@ -6,15 +6,16 @@
 
 #include "../headers/PokerUtils.h"
 
+#include <filesystem>
 
 int main()
 {
-    std::string resourcePath = "../resources/";
-    std::string pokerTablesFolder = "pokerTables";
-    std::string cardsImgName = "cards.jpg";
+    std::filesystem::path resourcePath = "resources";
+	std::filesystem::path pokerTablesFolder = "pokerTables";
+	std::filesystem::path cardsImgName = "cards.jpg";
 
     //get poker tables
-    std::vector<cv::Mat> pokerTablesMat = PokerUtils::GetAllImagesInPath(resourcePath + pokerTablesFolder);
+    std::vector<cv::Mat> pokerTablesMat = PokerUtils::GetAllImagesInPath(resourcePath / pokerTablesFolder);
     std::vector<Image> pokerTables;
 
     for(const auto& mat : pokerTablesMat)
@@ -24,7 +25,7 @@ int main()
     }
 
     //get cardsImg
-    cv::Mat cardsImg = cv::imread(resourcePath + cardsImgName);
+    cv::Mat cardsImg = cv::imread((resourcePath / cardsImgName).generic_string());
 
     //get vector of all cards
     std::vector<Card> cards = PokerUtils::GetCardsFromImg(cardsImg);

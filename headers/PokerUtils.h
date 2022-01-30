@@ -2,6 +2,7 @@
 #include "Card.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
+#include <filesystem>
 
 struct OffSets
 {
@@ -27,7 +28,7 @@ public:
     static const int nbCardOrbTries = 1000;
     static const int nbTableOrbTries = 1000;
     static std::vector<Card> GetCardsFromImg(cv::Mat& cardsImg);
-    static std::vector<cv::Mat> GetAllImagesInPath(const std::string& path);
+    static std::vector<cv::Mat> GetAllImagesInPath(const std::filesystem::path& path);
     static std::vector<cv::Mat> GetCardsDescriptors(std::vector<Card>& cards);
     static cv::Mat GetImageDescriptor(Image& img, const cv::Ptr<cv::ORB>& orb);
     static std::vector<std::vector<cv::DMatch>> GetCardMatchesInTable(Image& pokerTable, cv::BFMatcher& bfMatcher, const std::vector<Card>& cards);

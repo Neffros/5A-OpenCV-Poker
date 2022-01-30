@@ -1,6 +1,5 @@
 #include "../headers/PokerUtils.h"
 #include <iostream>
-#include <filesystem>
 
 ///
 /// \param cardsImg image of all the cards
@@ -44,7 +43,7 @@ OffSets PokerUtils::getImageOffset(cv::Mat img) {
     return {img.cols / 4 , img.rows / 13};
 }
 
-std::vector<cv::Mat> PokerUtils::GetAllImagesInPath(const std::string& path) {
+std::vector<cv::Mat> PokerUtils::GetAllImagesInPath(const std::filesystem::path& path) {
     std::vector<cv::Mat> images;
     int i = 0;
     std::cout << "getting images at path: "<< path << std::endl;
