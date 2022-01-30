@@ -11,6 +11,7 @@ public:
     cv::Mat descriptor;
     explicit Image(const cv::Mat& img);
     Image() = default;
+	virtual ~Image() = default;
 
     Image& operator=(const cv::Mat& image);
 };
