@@ -14,8 +14,15 @@ int main()
     std::string cardsImgName = "cards.jpg";
 
     //get poker tables
-    std::vector<cv::Mat> pokerTables = PokerUtils::GetAllImagesInPath(resourcePath + pokerTablesFolder);
-    std::vector<Image> pokerTable;
+    std::vector<cv::Mat> pokerTablesMat = PokerUtils::GetAllImagesInPath(resourcePath + pokerTablesFolder);
+    std::vector<Image> pokerTables;
+
+    for(const auto& mat : pokerTablesMat)
+    {
+        Image table(mat);
+        pokerTables.push_back(table);
+    }
+
     //get cardsImg
     cv::Mat cardsImg = cv::imread(resourcePath + cardsImgName);
 
@@ -25,13 +32,20 @@ int main()
     cv::imshow("card", cards[51].rawImg);
     cv::imshow("anothercard", cards[39].rawImg);
 
-
-    /*std::vector<cv::Mat> descriptors = PokerUtils::GetCardsDescriptors(cards);
+    std::vector<cv::Mat> cardDescriptors = PokerUtils::GetCardsDescriptors(cards);
     cv::BFMatcher bfMatcher;
-    bfMatcher.add(descriptors);
-    bfMatcher.train();*/
+    bfMatcher.add(cardDescriptors);
+    bfMatcher.train();
 
+    std::vector<std::vector<cv::DMatch>> filteredMatches(cards.size());
 
+    //cv::imshow("poker table", pokerTables[0].rawImg);
+
+    //for(auto table : pokerTables)
+    //{
+        filteredMatches = PokerUtils::GetCardMatchesInTable(pokerTables[0], bfMatcher, cards);
+    //}
+    //PokerUtils::drawTable(pokerTables[0], filteredMatches);
 
     cv::waitKey();
 
