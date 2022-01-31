@@ -21,7 +21,8 @@ const cv::Mat& Image::getDescriptors() const
 	return _descriptors;
 }
 
-const std::vector<cv::Point2f> Image::getImageEdges() {
+const std::vector<cv::Point2f> Image::getImageEdges() const
+{
     std::vector<cv::Point2f> res(4);
 
     res[0] = cv::Point2f(0, 0);

@@ -1,18 +1,39 @@
 #include "../include/PokerAnalyzer.h"
 #include <stdexcept>
+#include <fmt/format.h>
 
-static const int NB_CARD_FEATURES = 20000;
-static const int NB_TABLE_FEATURES = 20000;
+static const int NB_CARD_FEATURES = 10000;
+static const int NB_TABLE_FEATURES = 100000;
 static const int NB_CARD_VALUES = 14;
 static const int RECT_X_OFFSET = 5;
 static const int RECT_Y_OFFSET = 15;
 static const float DISTANCE_COEFF = 0.65f;
-static const int MIN_POINT_MATCHES = 10;
+static const int MIN_POINT_MATCHES = 4;
+
+//#define USE_ORB
+#define USE_SIFT
+
+#define USE_BF
+//#define USE_FLANN
 
 PokerAnalyzer::PokerAnalyzer(const std::filesystem::path& cardImagePath):
-_cardFeatureDetector(cv::ORB::create(NB_CARD_FEATURES)),
-_tableFeatureDetector(cv::ORB::create(NB_TABLE_FEATURES)),
-_descriptorMatcher(cv::BFMatcher::create())
+#if defined(USE_ORB)
+	_cardFeatureDetector(cv::ORB::create(NB_CARD_FEATURES)),
+	_tableFeatureDetector(cv::ORB::create(NB_TABLE_FEATURES)),
+#if defined(USE_BF)
+	_descriptorMatcher(cv::BFMatcher::create(cv::NORM_HAMMING))
+#else
+	_descriptorMatcher(cv::makePtr<cv::FlannBasedMatcher>(cv::makePtr<cv::flann::LshIndexParams>(12, 20, 2)))
+#endif
+#elif defined(USE_SIFT)
+	_cardFeatureDetector(cv::SIFT::create(NB_CARD_FEATURES)),
+	_tableFeatureDetector(cv::SIFT::create(NB_TABLE_FEATURES)),
+#if defined(USE_BF)
+	_descriptorMatcher(cv::BFMatcher::create(cv::NORM_L2))
+#else
+	_descriptorMatcher(cv::FlannBasedMatcher::create())
+#endif
+#endif
 {
 	loadPokerCards(cardImagePath);
 	trainMatcher();
@@ -113,51 +134,53 @@ void PokerAnalyzer::trainMatcher()
 
 void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches)
 {
-    PokerTable res = table;
+    cv::Mat outputImage = table.getPixelData().clone();
 	
-	for (auto & cardMatches : allCardsMatches)
+	for (int i = 0; i < allCardsMatches.size(); i++)
 	{
-		if (cardMatches.size() >= MIN_POINT_MATCHES)
+		if (allCardsMatches[i].size() >= MIN_POINT_MATCHES)
 		{
-
-			drawCardBindingBoxInTable(res, cardMatches);
+			drawCardBindingBoxInTable(outputImage, table, _cards[i], allCardsMatches[i]);
 		}
+		
+		cv::Mat outTemp;
+		cv::drawMatches(table.getPixelData(), table.getKeyPoints(), _cards[i].getPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
+		static int j = 0;
+		cv::imwrite(fmt::format("test{}.jpg", j++), outTemp);
 	}
 
-    cv::imwrite("tableWithCards.jpg", res.getPixelData());
+    cv::imwrite("tableWithCards.jpg", outputImage);
 }
 
-void PokerAnalyzer::drawCardBindingBoxInTable(const PokerTable& outputImage, std::vector<cv::DMatch> cardMatches)
+void PokerAnalyzer::drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerTable& table, const PokerCard& card, std::vector<cv::DMatch> cardMatches)
 {
 	std::vector<cv::Point2f> cardPoints;
 	std::vector<cv::Point2f> tablePoints;
 	std::vector<cv::Point2f> tableEdges(4);
 
-    const int index = cardMatches[0].imgIdx;
-    std::cout << "index: " << index << std::endl;
     for(auto match : cardMatches)
     {
-        cardPoints.push_back(_cards[index].getKeyPoints()[match.trainIdx].pt);
-        tablePoints.push_back(outputImage.getKeyPoints()[match.queryIdx].pt);
+        cardPoints.push_back(card.getKeyPoints()[match.trainIdx].pt);
+        tablePoints.push_back(table.getKeyPoints()[match.queryIdx].pt);
     }
-    cv::Scalar randomColor(
-            (double)std::rand() / RAND_MAX * 255,
-            (double)std::rand() / RAND_MAX * 255,
-            (double)std::rand() / RAND_MAX * 255
-    );
+	
     std::cout<<"cardpoints: " << cardPoints.size() << std::endl;
     std::cout<<"table points: " << tablePoints.size() << std::endl;
-    /*for(auto match : cardMatches)
-    {
-        cardPoints.push_back(_cards[match.trainIdx].getKeyPoints()[match.trainIdx].pt);
-        tablePoints.push_back(outputImage.getKeyPoints()[match.queryIdx].pt);
-    }*/
-    cv::Mat homography = cv::findHomography(cardPoints, tablePoints);
-    cv::perspectiveTransform(_cards[index].getImageEdges(), tableEdges, homography);
-
-    cv::line(outputImage.getPixelData(), tableEdges[0], tableEdges[1], randomColor, 5);
-    cv::line(outputImage.getPixelData(), tableEdges[1], tableEdges[2], randomColor, 5);
-    cv::line(outputImage.getPixelData(), tableEdges[2], tableEdges[3], randomColor, 5);
-    cv::line(outputImage.getPixelData(), tableEdges[3], tableEdges[0], randomColor, 5);
-
+	
+    cv::Mat homography = cv::findHomography(cardPoints, tablePoints, cv::RANSAC);
+	if (!homography.empty())
+	{
+		cv::Scalar randomColor(
+			(double) std::rand() / RAND_MAX * 255,
+			(double) std::rand() / RAND_MAX * 255,
+			(double) std::rand() / RAND_MAX * 255
+		);
+		
+		cv::perspectiveTransform(card.getImageEdges(), tableEdges, homography);
+		
+		cv::line(outputImage, tableEdges[0], tableEdges[1], randomColor, 5);
+		cv::line(outputImage, tableEdges[1], tableEdges[2], randomColor, 5);
+		cv::line(outputImage, tableEdges[2], tableEdges[3], randomColor, 5);
+		cv::line(outputImage, tableEdges[3], tableEdges[0], randomColor, 5);
+	}
 }

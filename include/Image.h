@@ -11,7 +11,7 @@ public:
 	const cv::Mat& getPixelData() const;
 	const std::vector<cv::KeyPoint>& getKeyPoints() const;
 	const cv::Mat& getDescriptors() const;
-    const std::vector<cv::Point2f> getImageEdges();
+    const std::vector<cv::Point2f> getImageEdges() const;
 
 private:
 	cv::Mat _pixelData;

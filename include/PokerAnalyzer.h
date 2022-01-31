@@ -39,5 +39,5 @@ private:
 	
 	static Offset getCardsImageOffset(const cv::Mat& cardsImage);
 	void drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches);
-	void drawCardBindingBoxInTable(const PokerTable& outputImage, std::vector<cv::DMatch> cardMatches);
+	static void drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerTable& table, const PokerCard& card, std::vector<cv::DMatch> cardMatches);
 };

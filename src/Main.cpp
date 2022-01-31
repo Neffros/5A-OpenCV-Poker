@@ -31,14 +31,24 @@ int main()
 		}
 		
 		pokerTables.emplace_back(pokerAnalyzer.loadPokerTable(cv::imread(path.generic_string())));
+		break; //TODO: remove
 	}
 	
-    cv::imshow("card", pokerAnalyzer.getCards()[51].getPixelData());
-    cv::imshow("anothercard", pokerAnalyzer.getCards()[39].getPixelData());
+	for (const PokerCard& card : pokerAnalyzer.getCards())
+	{
+		if (card.getType() == PokerCard::Type::Clubs && card.getValue() == PokerCard::Value::Two)
+		{
+			cv::imshow("card image", card.getPixelData());
+			
+			cv::Mat output;
+			cv::drawKeypoints(card.getPixelData(), card.getKeyPoints(), output);
+			cv::imshow("card keypoints", output);
+		}
+	}
 	
-	pokerAnalyzer.analyze(pokerTables[5]);
+	pokerAnalyzer.analyze(pokerTables[0]);
 
-    //cv::waitKey();
+    cv::waitKey();
 
     return 0;
 }
