@@ -2,16 +2,16 @@
 #include <stdexcept>
 #include <fmt/format.h>
 
-static const int NB_CARD_FEATURES = 10000;
+static const int NB_CARD_FEATURES = 1000;
 static const int NB_TABLE_FEATURES = 100000;
 static const int NB_CARD_VALUES = 14;
 static const int RECT_X_OFFSET = 5;
 static const int RECT_Y_OFFSET = 15;
 static const float DISTANCE_COEFF = 0.65f;
-static const int MIN_POINT_MATCHES = 4;
+static const int MIN_POINT_MATCHES = 15;
 
-//#define USE_ORB
-#define USE_SIFT
+#define USE_ORB
+//#define USE_SIFT
 
 #define USE_BF
 //#define USE_FLANN
@@ -19,24 +19,28 @@ static const int MIN_POINT_MATCHES = 4;
 PokerAnalyzer::PokerAnalyzer(const std::filesystem::path& cardImagePath):
 #if defined(USE_ORB)
 	_cardFeatureDetector(cv::ORB::create(NB_CARD_FEATURES)),
-	_tableFeatureDetector(cv::ORB::create(NB_TABLE_FEATURES)),
-#if defined(USE_BF)
-	_descriptorMatcher(cv::BFMatcher::create(cv::NORM_HAMMING))
-#else
-	_descriptorMatcher(cv::makePtr<cv::FlannBasedMatcher>(cv::makePtr<cv::flann::LshIndexParams>(12, 20, 2)))
-#endif
+	_tableFeatureDetector(cv::ORB::create(NB_TABLE_FEATURES))
 #elif defined(USE_SIFT)
 	_cardFeatureDetector(cv::SIFT::create(NB_CARD_FEATURES)),
-	_tableFeatureDetector(cv::SIFT::create(NB_TABLE_FEATURES)),
-#if defined(USE_BF)
-	_descriptorMatcher(cv::BFMatcher::create(cv::NORM_L2))
-#else
-	_descriptorMatcher(cv::FlannBasedMatcher::create())
-#endif
+	_tableFeatureDetector(cv::SIFT::create(NB_TABLE_FEATURES))
 #endif
 {
 	loadPokerCards(cardImagePath);
-	trainMatcher();
+	
+	for (int i = 0; i < _cards.size(); i++)
+	{
+#if defined(USE_BF) && defined(USE_ORB)
+		_descriptorMatchers.push_back(cv::BFMatcher::create(cv::NORM_HAMMING));
+#elif defined(USE_BF) && defined(USE_SIFT)
+		_descriptorMatchers.push_back(cv::BFMatcher::create(cv::NORM_L2));
+#elif defined(USE_FLANN) && defined(USE_ORB)
+		_descriptorMatchers.push_back(cv::makePtr<cv::FlannBasedMatcher>(cv::makePtr<cv::flann::LshIndexParams>(12, 20, 2)));
+#elif defined(USE_FLANN) && defined(USE_SIFT)
+		_descriptorMatchers.push_back(cv::FlannBasedMatcher::create();
+#endif
+	}
+	
+	trainMatchers();
 }
 
 void PokerAnalyzer::loadPokerCards(const std::filesystem::path& cardImagePath)
@@ -94,23 +98,32 @@ void PokerAnalyzer::analyze(const PokerTable& table)
 
 std::vector<std::vector<cv::DMatch>> PokerAnalyzer::doMatch(const PokerTable& table)
 {
-	std::vector<std::vector<cv::DMatch>> matches;
-	_descriptorMatcher->knnMatch(table.getDescriptors(), matches, 2);
+	std::vector<std::vector<cv::DMatch>> allFilteredMatches(_cards.size());
 	
-	return getFilteredMatches(matches);
+	for (int i = 0; i < _cards.size(); i++)
+	{
+		std::vector<std::vector<cv::DMatch>> matches;
+		_descriptorMatchers[i]->knnMatch(table.getDescriptors(), matches, 2);
+		allFilteredMatches[i] = filterMatches(matches);
+	}
+	
+	return allFilteredMatches;
 }
 
-std::vector<std::vector<cv::DMatch>> PokerAnalyzer::getFilteredMatches(const std::vector<std::vector<cv::DMatch>>& matches)
+std::vector<cv::DMatch> PokerAnalyzer::filterMatches(const std::vector<std::vector<cv::DMatch>>& matches)
 {
-	std::vector<std::vector<cv::DMatch>> filteredMatches(_cards.size());
+	std::vector<cv::DMatch> filteredMatches;
+	filteredMatches.reserve(matches.size());
 	
 	for(auto match : matches)
 	{
 		if (match[0].distance < DISTANCE_COEFF * match[1].distance)
 		{
-            filteredMatches[match[0].imgIdx].push_back(match[0]);
+            filteredMatches.push_back(match[0]);
 		}
 	}
+	
+	filteredMatches.shrink_to_fit();
 	
 	return filteredMatches;
 }
@@ -120,16 +133,15 @@ const std::vector<PokerCard>& PokerAnalyzer::getCards() const
 	return _cards;
 }
 
-void PokerAnalyzer::trainMatcher()
+void PokerAnalyzer::trainMatchers()
 {
-	std::vector<cv::Mat> cardsDescriptors;
-	for (PokerCard& card : _cards)
+	for (int i = 0; i < _cards.size(); i++)
 	{
-		cardsDescriptors.emplace_back(card.getDescriptors());
+		PokerCard& card = _cards[i];
+		
+		_descriptorMatchers[i]->add({card.getDescriptors()});
+		_descriptorMatchers[i]->train();
 	}
-	
-	_descriptorMatcher->add(cardsDescriptors);
-	_descriptorMatcher->train();
 }
 
 void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches)
@@ -141,12 +153,17 @@ void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<c
 		if (allCardsMatches[i].size() >= MIN_POINT_MATCHES)
 		{
 			drawCardBindingBoxInTable(outputImage, table, _cards[i], allCardsMatches[i]);
+			
+			cv::Mat outTemp;
+			cv::drawMatches(table.getPixelData(), table.getKeyPoints(), _cards[i].getPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
+			cv::imwrite(fmt::format("test_{:02d}_good.jpg", i), outTemp);
 		}
-		
-		cv::Mat outTemp;
-		cv::drawMatches(table.getPixelData(), table.getKeyPoints(), _cards[i].getPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
-		static int j = 0;
-		cv::imwrite(fmt::format("test{}.jpg", j++), outTemp);
+		else
+		{
+			cv::Mat outTemp;
+			cv::drawMatches(table.getPixelData(), table.getKeyPoints(), _cards[i].getPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
+			cv::imwrite(fmt::format("test_{:02d}_bad.jpg", i), outTemp);
+		}
 	}
 
     cv::imwrite("tableWithCards.jpg", outputImage);

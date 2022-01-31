@@ -29,13 +29,13 @@ private:
 	
 	cv::Ptr<cv::FeatureDetector> _cardFeatureDetector;
 	cv::Ptr<cv::FeatureDetector> _tableFeatureDetector;
-	cv::Ptr<cv::DescriptorMatcher> _descriptorMatcher;
+	std::vector<cv::Ptr<cv::DescriptorMatcher>> _descriptorMatchers;
 	
 	void loadPokerCards(const std::filesystem::path& cardImagePath);
-	void trainMatcher();
+	void trainMatchers();
 	
 	std::vector<std::vector<cv::DMatch>> doMatch(const PokerTable& table);
-	std::vector<std::vector<cv::DMatch>> getFilteredMatches(const std::vector<std::vector<cv::DMatch>>& matches);
+	std::vector<cv::DMatch> filterMatches(const std::vector<std::vector<cv::DMatch>>& matches);
 	
 	static Offset getCardsImageOffset(const cv::Mat& cardsImage);
 	void drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches);
