@@ -1,13 +1,13 @@
 #include "../include/PokerAnalyzer.h"
 #include <stdexcept>
 
-static const int NB_CARD_FEATURES = 1000;
-static const int NB_TABLE_FEATURES = 1000;
+static const int NB_CARD_FEATURES = 20000;
+static const int NB_TABLE_FEATURES = 20000;
 static const int NB_CARD_VALUES = 14;
 static const int RECT_X_OFFSET = 5;
 static const int RECT_Y_OFFSET = 15;
-static const float DISTANCE_COEFF = 0.25f;
-static const int MIN_POINT_MATCHES = 7;
+static const float DISTANCE_COEFF = 0.65f;
+static const int MIN_POINT_MATCHES = 10;
 
 PokerAnalyzer::PokerAnalyzer(const std::filesystem::path& cardImagePath):
 _cardFeatureDetector(cv::ORB::create(NB_CARD_FEATURES)),
@@ -68,6 +68,7 @@ PokerTable PokerAnalyzer::loadPokerTable(cv::Mat&& tableImage) const
 void PokerAnalyzer::analyze(const PokerTable& table)
 {
 	std::vector<std::vector<cv::DMatch>> matches = doMatch(table);
+    drawTable(table, matches);
 }
 
 std::vector<std::vector<cv::DMatch>> PokerAnalyzer::doMatch(const PokerTable& table)
@@ -84,12 +85,9 @@ std::vector<std::vector<cv::DMatch>> PokerAnalyzer::getFilteredMatches(const std
 	
 	for(auto match : matches)
 	{
-		std::cout << "match 0: " << match[0].distance << std::endl;
-		std::cout << "match 1: " << match[1].distance << std::endl;
 		if (match[0].distance < DISTANCE_COEFF * match[1].distance)
 		{
-			std::cout << "good match" << std::endl;
-			filteredMatches[match[0].imgIdx].push_back(match[0]);
+            filteredMatches[match[0].imgIdx].push_back(match[0]);
 		}
 	}
 	
@@ -115,38 +113,51 @@ void PokerAnalyzer::trainMatcher()
 
 void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches)
 {
-	cv::Mat res = table.getPixelData().clone();
+    PokerTable res = table;
 	
 	for (auto & cardMatches : allCardsMatches)
 	{
-		//std::cout << cardMatches.size() << std::endl;
-		if (cardMatches.size() > MIN_POINT_MATCHES)
+		if (cardMatches.size() >= MIN_POINT_MATCHES)
 		{
+
 			drawCardBindingBoxInTable(res, cardMatches);
 		}
 	}
+
+    cv::imwrite("tableWithCards.jpg", res.getPixelData());
 }
 
-void PokerAnalyzer::drawCardBindingBoxInTable(const cv::Mat& outputImage, std::vector<cv::DMatch> cardMatches)
+void PokerAnalyzer::drawCardBindingBoxInTable(const PokerTable& outputImage, std::vector<cv::DMatch> cardMatches)
 {
 	std::vector<cv::Point2f> cardPoints;
 	std::vector<cv::Point2f> tablePoints;
 	std::vector<cv::Point2f> tableEdges(4);
-	
-	/*
-	for (auto match : cardMatches)
-	{
-		cardPoints.push_back(objectsKeyPoints[index][match.trainIdx].pt); //reverse query and trainidx?
-		scenePoints.push_back(sceneKeyPoints[match.queryIdx].pt);
-	}
 
-	//detemrine la matrice de transfomration entre l'image et l'objet dans la scène
-	cv::Mat homography = cv::findHomography(objectPoints, scenePoints);
-	cv::perspectiveTransform(objectsEdges[index], sceneEdges, homography);
+    const int index = cardMatches[0].imgIdx;
+    std::cout << "index: " << index << std::endl;
+    for(auto match : cardMatches)
+    {
+        cardPoints.push_back(_cards[index].getKeyPoints()[match.trainIdx].pt);
+        tablePoints.push_back(outputImage.getKeyPoints()[match.queryIdx].pt);
+    }
+    cv::Scalar randomColor(
+            (double)std::rand() / RAND_MAX * 255,
+            (double)std::rand() / RAND_MAX * 255,
+            (double)std::rand() / RAND_MAX * 255
+    );
+    std::cout<<"cardpoints: " << cardPoints.size() << std::endl;
+    std::cout<<"table points: " << tablePoints.size() << std::endl;
+    /*for(auto match : cardMatches)
+    {
+        cardPoints.push_back(_cards[match.trainIdx].getKeyPoints()[match.trainIdx].pt);
+        tablePoints.push_back(outputImage.getKeyPoints()[match.queryIdx].pt);
+    }*/
+    cv::Mat homography = cv::findHomography(cardPoints, tablePoints);
+    cv::perspectiveTransform(_cards[index].getImageEdges(), tableEdges, homography);
 
-	//dessine le carré autour de l'image dans la vidéo
-	cv::line(image, sceneEdges[0], sceneEdges[1], colors[index], 5);
-	cv::line(image, sceneEdges[1], sceneEdges[2], colors[index], 5);
-	cv::line(image, sceneEdges[2], sceneEdges[3], colors[index], 5);
-	cv::line(image, sceneEdges[3], sceneEdges[0], colors[index], 5);*/
+    cv::line(outputImage.getPixelData(), tableEdges[0], tableEdges[1], randomColor, 5);
+    cv::line(outputImage.getPixelData(), tableEdges[1], tableEdges[2], randomColor, 5);
+    cv::line(outputImage.getPixelData(), tableEdges[2], tableEdges[3], randomColor, 5);
+    cv::line(outputImage.getPixelData(), tableEdges[3], tableEdges[0], randomColor, 5);
+
 }

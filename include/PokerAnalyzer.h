@@ -38,6 +38,6 @@ private:
 	std::vector<std::vector<cv::DMatch>> getFilteredMatches(const std::vector<std::vector<cv::DMatch>>& matches);
 	
 	static Offset getCardsImageOffset(const cv::Mat& cardsImage);
-	static void drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches);
-	static void drawCardBindingBoxInTable(const cv::Mat& outputImage, std::vector<cv::DMatch> cardMatches);
+	void drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches);
+	void drawCardBindingBoxInTable(const PokerTable& outputImage, std::vector<cv::DMatch> cardMatches);
 };

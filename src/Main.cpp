@@ -36,9 +36,9 @@ int main()
     cv::imshow("card", pokerAnalyzer.getCards()[51].getPixelData());
     cv::imshow("anothercard", pokerAnalyzer.getCards()[39].getPixelData());
 	
-	pokerAnalyzer.analyze(pokerTables[0]);
+	pokerAnalyzer.analyze(pokerTables[5]);
 
-    cv::waitKey();
+    //cv::waitKey();
 
     return 0;
 }

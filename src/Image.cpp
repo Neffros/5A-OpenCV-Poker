@@ -20,3 +20,13 @@ const cv::Mat& Image::getDescriptors() const
 {
 	return _descriptors;
 }
+
+const std::vector<cv::Point2f> Image::getImageEdges() {
+    std::vector<cv::Point2f> res(4);
+
+    res[0] = cv::Point2f(0, 0);
+    res[1] = cv::Point2f(_pixelData.cols, 0);
+    res[2] = cv::Point2f(_pixelData.cols, _pixelData.rows);
+    res[3] = cv::Point2f(0, _pixelData.rows);
+    return res;
+}
