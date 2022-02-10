@@ -5,5 +5,5 @@
 class PokerTable : public Image
 {
 public:
-	using Image::Image;
+	PokerTable(cv::Mat&& pixelData, cv::FeatureDetector& featureDetector);
 };

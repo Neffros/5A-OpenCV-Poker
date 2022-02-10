@@ -7,7 +7,7 @@ cmake_policy(SET CMP0091 NEW)
 
 project(Projet_OpenCV_Poker)
 
-add_executable(Projet_OpenCV_Poker src/Main.cpp include/Image.h src/Image.cpp src/PokerAnalyzer.cpp include/PokerAnalyzer.h src/PokerCard.cpp include/PokerCard.h src/PokerTable.cpp include/PokerTable.h)
+add_executable(Projet_OpenCV_Poker src/Main.cpp include/Image.h src/Image.cpp src/PokerAnalyzer.cpp include/PokerAnalyzer.h src/PokerCard.cpp include/PokerCard.h src/PokerTable.cpp include/PokerTable.h include/PokerCardValue.h src/PokerCardValue.cpp)
 
 set_property(TARGET Projet_OpenCV_Poker PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 

@@ -13,13 +13,11 @@
 int main()
 {
     std::filesystem::path resourcePath = "resources";
-	std::filesystem::path pokerTablesFolder = "pokerTables";
-	std::filesystem::path cardsImgName = "cards.jpg";
 	
-	PokerAnalyzer pokerAnalyzer(resourcePath / cardsImgName);
+	PokerAnalyzer pokerAnalyzer(resourcePath / "characters");
 	
 	std::vector<PokerTable> pokerTables;
-	for (const auto& entry : std::filesystem::directory_iterator(resourcePath / pokerTablesFolder))
+	for (const auto& entry : std::filesystem::directory_iterator(resourcePath / "pokerTables"))
 	{
 		std::filesystem::path path = entry.path();
 		
@@ -34,17 +32,17 @@ int main()
 		break; //TODO: remove
 	}
 	
-	for (const PokerCard& card : pokerAnalyzer.getCards())
-	{
-		if (card.getType() == PokerCard::Type::Clubs && card.getValue() == PokerCard::Value::Two)
-		{
-			cv::imshow("card image", card.getPixelData());
-			
-			cv::Mat output;
-			cv::drawKeypoints(card.getPixelData(), card.getKeyPoints(), output);
-			cv::imshow("card keypoints", output);
-		}
-	}
+//	for (const PokerCard& card : pokerAnalyzer.getCards())
+//	{
+//		if (card.getType() == PokerCard::Type::Clubs && card.getValue() == PokerCard::Value::Two)
+//		{
+//			cv::imshow("card image", card.getPixelData());
+//
+//			cv::Mat output;
+//			cv::drawKeypoints(card.getPixelData(), card.getKeyPoints(), output);
+//			cv::imshow("card keypoints", output);
+//		}
+//	}
 	
 	pokerAnalyzer.analyze(pokerTables[0]);
 
