@@ -32,10 +32,11 @@ public:
 		Two = 2
 	};
 	
-	PokerCard(cv::Mat&& pixelData, cv::FeatureDetector& featureDetector, Type cardType, Value cardValue);
+	PokerCard(cv::Mat&& originalPixelData, cv::Mat&& preprocessedPixelData, cv::FeatureDetector& featureDetector, Type cardType, Value cardValue);
 	
 	Type getType() const;
 	Value getValue() const;
+    const std::vector<cv::Point2f> getImageEdges() const;
 
 private:
 	Type _cardType;

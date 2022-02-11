@@ -1,14 +1,16 @@
 #include "../include/PokerAnalyzer.h"
 #include <stdexcept>
 #include <fmt/format.h>
+#include <opencv2/core/hal/interface.h>
+#include <magic_enum.hpp>
 
-static const int NB_CARD_FEATURES = 1000;
-static const int NB_TABLE_FEATURES = 100000;
+static const int NB_CARD_FEATURES = 100000;
+static const int NB_TABLE_FEATURES = 200000;
 static const int NB_CARD_VALUES = 14;
 static const int RECT_X_OFFSET = 5;
 static const int RECT_Y_OFFSET = 15;
 static const float DISTANCE_COEFF = 0.65f;
-static const int MIN_POINT_MATCHES = 15;
+static const int MIN_POINT_MATCHES = 75;
 
 #define USE_ORB
 //#define USE_SIFT
@@ -18,8 +20,8 @@ static const int MIN_POINT_MATCHES = 15;
 
 PokerAnalyzer::PokerAnalyzer(const std::filesystem::path& cardImagePath):
 #if defined(USE_ORB)
-	_cardFeatureDetector(cv::ORB::create(NB_CARD_FEATURES)),
-	_tableFeatureDetector(cv::ORB::create(NB_TABLE_FEATURES))
+	_cardFeatureDetector(cv::ORB::create(NB_CARD_FEATURES, 1.2, 8, 1)),
+	_tableFeatureDetector(cv::ORB::create(NB_TABLE_FEATURES, 1.2, 8, 1))
 #elif defined(USE_SIFT)
 	_cardFeatureDetector(cv::SIFT::create(NB_CARD_FEATURES)),
 	_tableFeatureDetector(cv::SIFT::create(NB_TABLE_FEATURES))
@@ -46,7 +48,7 @@ PokerAnalyzer::PokerAnalyzer(const std::filesystem::path& cardImagePath):
 void PokerAnalyzer::loadPokerCards(const std::filesystem::path& cardImagePath)
 {
 	cv::Mat cardsImage = cv::imread(cardImagePath.generic_string());
-	
+
 	Offset offset = getCardsImageOffset(cardsImage);
 	
 	//std::cout << "xoffset: " << offsets.x << std::endl;
@@ -71,8 +73,11 @@ void PokerAnalyzer::loadPokerCards(const std::filesystem::path& cardImagePath)
 					offset.x - RECT_X_OFFSET,
 					offset.y - RECT_Y_OFFSET
 			));
-			
-			_cards.emplace_back(std::move(cardImg), *_cardFeatureDetector, static_cast<PokerCard::Type>(cardTypeId), static_cast<PokerCard::Value>(cardValueId));
+
+            cv::Mat preprocessedImg = preprocessCard(cardImg);
+
+
+			_cards.emplace_back(std::move(cardImg), std::move(preprocessedImg), *_cardFeatureDetector, static_cast<PokerCard::Type>(cardTypeId), static_cast<PokerCard::Value>(cardValueId));
 			
 			cardValueId--;
 		}
@@ -87,7 +92,9 @@ PokerAnalyzer::Offset PokerAnalyzer::getCardsImageOffset(const cv::Mat& cardsIma
 
 PokerTable PokerAnalyzer::loadPokerTable(cv::Mat&& tableImage) const
 {
-	return PokerTable(std::forward<cv::Mat>(tableImage), *_tableFeatureDetector);
+    cv::Mat originalImg = tableImage;
+    cv::Mat preprocessedImg = preprocessTable(originalImg);
+	return PokerTable(std::move(originalImg), std::move(preprocessedImg), *_tableFeatureDetector);
 }
 
 void PokerAnalyzer::analyze(const PokerTable& table)
@@ -146,7 +153,7 @@ void PokerAnalyzer::trainMatchers()
 
 void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<cv::DMatch>> allCardsMatches)
 {
-    cv::Mat outputImage = table.getPixelData().clone();
+    cv::Mat outputImage = table.getOriginalPixelData().clone();
 	
 	for (int i = 0; i < allCardsMatches.size(); i++)
 	{
@@ -155,13 +162,13 @@ void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<c
 			drawCardBindingBoxInTable(outputImage, table, _cards[i], allCardsMatches[i]);
 			
 			cv::Mat outTemp;
-			cv::drawMatches(table.getPixelData(), table.getKeyPoints(), _cards[i].getPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
+			cv::drawMatches(table.getOriginalPixelData(), table.getKeyPoints(), _cards[i].getOriginalPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
 			cv::imwrite(fmt::format("test_{:02d}_good.jpg", i), outTemp);
 		}
 		else
 		{
 			cv::Mat outTemp;
-			cv::drawMatches(table.getPixelData(), table.getKeyPoints(), _cards[i].getPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
+			cv::drawMatches(table.getOriginalPixelData(), table.getKeyPoints(), _cards[i].getOriginalPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
 			cv::imwrite(fmt::format("test_{:02d}_bad.jpg", i), outTemp);
 		}
 	}
@@ -192,12 +199,51 @@ void PokerAnalyzer::drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerT
 			(double) std::rand() / RAND_MAX * 255,
 			(double) std::rand() / RAND_MAX * 255
 		);
-		
+
 		cv::perspectiveTransform(card.getImageEdges(), tableEdges, homography);
-		
-		cv::line(outputImage, tableEdges[0], tableEdges[1], randomColor, 5);
+
+        cv::Point2f* smallest = &tableEdges[0];
+        for (int i = 1; i < tableEdges.size(); i++)
+        {
+            if (tableEdges[i].y < smallest->y)
+            {
+                smallest = &tableEdges[i];
+            }
+        }
+        std::string_view valueStr = magic_enum::enum_name(card.getValue());
+        std::string_view typeStr = magic_enum::enum_name(card.getType());
+
+        std::string outputStr = fmt::format("{} of {}", valueStr, typeStr);
+        cv::Point2f strOrigin = *smallest;
+        strOrigin.y -= 30;
+        cv::putText(outputImage, outputStr, strOrigin, cv::FONT_HERSHEY_PLAIN, 3, cv::Scalar(0,0,255), 2);
+
+        cv::line(outputImage, tableEdges[0], tableEdges[1], randomColor, 5);
 		cv::line(outputImage, tableEdges[1], tableEdges[2], randomColor, 5);
 		cv::line(outputImage, tableEdges[2], tableEdges[3], randomColor, 5);
 		cv::line(outputImage, tableEdges[3], tableEdges[0], randomColor, 5);
 	}
+}
+
+cv::Mat PokerAnalyzer::preprocessCard(const cv::Mat &img) {
+/*    cv::Mat grayImg;
+    cv::cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
+
+    cv::Mat blackWhiteImg;
+    cv::threshold(grayImg, blackWhiteImg, 160, 255, cv::THRESH_BINARY);
+
+    return blackWhiteImg;*/
+    return img;
+}
+
+cv::Mat PokerAnalyzer::preprocessTable(const cv::Mat &img) {
+
+/*    cv::Mat grayImg;
+    cv::cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
+
+    cv::Mat blackWhiteImg;
+    cv::threshold(grayImg, blackWhiteImg, 200, 255, cv::THRESH_BINARY);
+
+    return blackWhiteImg;*/
+    return img;
 }

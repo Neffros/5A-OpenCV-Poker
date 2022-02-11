@@ -15,8 +15,12 @@ public:
 	PokerTable loadPokerTable(cv::Mat&& tableImage) const;
 	
 	void analyze(const PokerTable& table);
-	
+
 	const std::vector<PokerCard>& getCards() const;
+
+    static cv::Mat preprocessCard(const cv::Mat& img);
+
+    static cv::Mat preprocessTable(const cv::Mat& img);
 	
 private:
 	struct Offset

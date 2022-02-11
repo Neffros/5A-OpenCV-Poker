@@ -17,6 +17,9 @@ target_compile_features(Projet_OpenCV_Poker PRIVATE cxx_std_20)
 find_package(OpenCV CONFIG REQUIRED)
 target_link_libraries(Projet_OpenCV_Poker PRIVATE ${OpenCV_LIBS})
 
+find_package(magic_enum CONFIG REQUIRED)
+target_link_libraries(Projet_OpenCV_Poker PRIVATE magic_enum::magic_enum)
+
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(Projet_OpenCV_Poker PRIVATE fmt::fmt)
 

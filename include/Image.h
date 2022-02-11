@@ -5,16 +5,17 @@
 class Image
 {
 public:
-    Image(cv::Mat&& pixelData, cv::FeatureDetector& featureDetector);
+    Image(cv::Mat&& originalPixelData, cv::Mat&& preprocessedPixelData, cv::FeatureDetector& featureDetector);
 	virtual ~Image() = default;
 	
-	const cv::Mat& getPixelData() const;
+	const cv::Mat& getOriginalPixelData() const;
+	const cv::Mat& getPreprocessedPixelData() const;
 	const std::vector<cv::KeyPoint>& getKeyPoints() const;
 	const cv::Mat& getDescriptors() const;
-    const std::vector<cv::Point2f> getImageEdges() const;
 
-private:
-	cv::Mat _pixelData;
+protected:
+    cv::Mat _originalPixelData;
+	cv::Mat _preprocessedPixelData;
 	std::vector<cv::KeyPoint> _keyPoints;
 	cv::Mat _descriptors;
 };
