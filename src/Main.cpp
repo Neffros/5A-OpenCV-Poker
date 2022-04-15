@@ -17,8 +17,8 @@ namespace solA {
 
         PokerAnalyzer pokerAnalyzer(resourcePath / cardsImgName);
 
-        std::vector<PokerTable> pokerTables;
-        for (const auto &entry: std::filesystem::directory_iterator(resourcePath / pokerTablesFolder)) {
+        //std::vector<PokerTable> pokerTables;
+        /*for (const auto &entry: std::filesystem::directory_iterator(resourcePath / pokerTablesFolder)) {
             std::filesystem::path path = entry.path();
 
             std::string ext = path.extension().generic_string();
@@ -29,7 +29,7 @@ namespace solA {
 
             pokerTables.emplace_back(pokerAnalyzer.loadPokerTable(cv::imread(path.generic_string())));
             //break; //TODO: remove
-        }
+        }*/
 
         /*for (const PokerCard& card : pokerAnalyzer.getCards())
         {
@@ -47,7 +47,7 @@ namespace solA {
             }
         }*/
 
-        pokerAnalyzer.analyze(pokerTables[10]);
+        pokerAnalyzer.analyze(pokerAnalyzer.loadPokerTable(std::move(testImage.clone())));
         //cv::imwrite("processedTable.jpg", pokerTables[0].getPreprocessedPixelData());
 
         //cv::waitKey();
