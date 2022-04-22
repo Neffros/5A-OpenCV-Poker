@@ -164,23 +164,25 @@ void PokerAnalyzer::drawTable(const PokerTable& table, std::vector<std::vector<c
 			cv::Mat outTemp;
 			cv::drawMatches(table.getOriginalPixelData(), table.getKeyPoints(), _cards[i].getOriginalPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
 			cv::imwrite(fmt::format("test_{:02d}_good.jpg", i), outTemp);
+            _cards[i].isGood = true;
 		}
 		else
 		{
 			cv::Mat outTemp;
 			cv::drawMatches(table.getOriginalPixelData(), table.getKeyPoints(), _cards[i].getOriginalPixelData(), _cards[i].getKeyPoints(), allCardsMatches[i], outTemp);
 			cv::imwrite(fmt::format("test_{:02d}_bad.jpg", i), outTemp);
+            _cards[i].isGood = false;
 		}
 	}
 
     cv::imwrite("tableWithCards.jpg", outputImage);
 }
 
-void PokerAnalyzer::drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerTable& table, const PokerCard& card, std::vector<cv::DMatch> cardMatches)
+void PokerAnalyzer::drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerTable& table, PokerCard& card, std::vector<cv::DMatch> cardMatches)
 {
 	std::vector<cv::Point2f> cardPoints;
 	std::vector<cv::Point2f> tablePoints;
-	std::vector<cv::Point2f> tableEdges(4);
+	//std::vector<cv::Point2f> tableEdges(4);
 
     for(auto match : cardMatches)
     {
@@ -200,14 +202,14 @@ void PokerAnalyzer::drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerT
 			(double) std::rand() / RAND_MAX * 255
 		);
 
-		cv::perspectiveTransform(card.getImageEdges(), tableEdges, homography);
+		cv::perspectiveTransform(card.getImageEdges(), card.tableEdges, homography);
 
-        cv::Point2f* smallest = &tableEdges[0];
-        for (int i = 1; i < tableEdges.size(); i++)
+        cv::Point2f* smallest = &card.tableEdges[0];
+        for (int i = 1; i < card.tableEdges.size(); i++)
         {
-            if (tableEdges[i].y < smallest->y)
+            if (card.tableEdges[i].y < smallest->y)
             {
-                smallest = &tableEdges[i];
+                smallest = &card.tableEdges[i];
             }
         }
         std::string_view valueStr = magic_enum::enum_name(card.getValue());
@@ -218,10 +220,10 @@ void PokerAnalyzer::drawCardBindingBoxInTable(cv::Mat& outputImage, const PokerT
         strOrigin.y -= 30;
         cv::putText(outputImage, outputStr, strOrigin, cv::FONT_HERSHEY_PLAIN, 3, cv::Scalar(0,0,255), 2);
 
-        cv::line(outputImage, tableEdges[0], tableEdges[1], randomColor, 5);
-		cv::line(outputImage, tableEdges[1], tableEdges[2], randomColor, 5);
-		cv::line(outputImage, tableEdges[2], tableEdges[3], randomColor, 5);
-		cv::line(outputImage, tableEdges[3], tableEdges[0], randomColor, 5);
+        cv::line(outputImage, card.tableEdges[0], card.tableEdges[1], randomColor, 5);
+		cv::line(outputImage, card.tableEdges[1], card.tableEdges[2], randomColor, 5);
+		cv::line(outputImage, card.tableEdges[2], card.tableEdges[3], randomColor, 5);
+		cv::line(outputImage, card.tableEdges[3], card.tableEdges[0], randomColor, 5);
 	}
 }
 

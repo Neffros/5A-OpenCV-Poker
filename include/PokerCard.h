@@ -38,6 +38,9 @@ public:
 	Value getValue() const;
     const std::vector<cv::Point2f> getImageEdges() const;
 
+    bool isGood;
+    std::vector<cv::Point2f> tableEdges;
+
 private:
 	Type _cardType;
 	Value _cardValue;

@@ -52,7 +52,13 @@ namespace solA {
 
         //cv::waitKey();
 
-        SolutionAResult results(pokerAnalyzer.getCards());
+        auto cards = pokerAnalyzer.getCards();
+        std::vector<PokerCard> goodCards;
+        for(auto& card : cards){
+            if(card.isGood)
+                goodCards.emplace_back(card);
+        }
+        SolutionAResult results(goodCards);
         return results;
     }
 }
